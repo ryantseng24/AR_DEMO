@@ -172,7 +172,7 @@
       missTolerance: 5;
     "
     color-space="sRGB"
-    renderer="colorManagement: true; physicallyCorrectLights: true;"
+    renderer="colorManagement: true; physicallyCorrectLights: false; exposure: 2; toneMapping: ACESFilmic;"
     vr-mode-ui="enabled: false"
     device-orientation-permission-ui="enabled: false"
   >
@@ -188,13 +188,17 @@
     <!-- AR 相機 -->
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-    <!-- 燈光設定 -->
-    <!-- 環境光：整體照亮，避免全黑 -->
-    <a-light type="ambient" color="#ffffff" intensity="0.8"></a-light>
-    <!-- 主光源：從上方照射，產生立體感 -->
-    <a-light type="directional" color="#ffffff" intensity="1.0" position="0 2 1"></a-light>
-    <!-- 補光：從前方補光，讓正面更亮 -->
-    <a-light type="directional" color="#ffffff" intensity="0.5" position="0 0 2"></a-light>
+    <!-- 燈光設定 (大幅增強) -->
+    <!-- 環境光：整體照亮 -->
+    <a-light type="ambient" color="#ffffff" intensity="1.5"></a-light>
+    <!-- 半球光：模擬天空與地面反射 -->
+    <a-light type="hemisphere" color="#ffffff" ground-color="#ffffff" intensity="1.5"></a-light>
+    <!-- 主光源：從上前方照射 -->
+    <a-light type="directional" color="#ffffff" intensity="2.0" position="1 2 2"></a-light>
+    <!-- 補光：從左側 -->
+    <a-light type="directional" color="#ffffff" intensity="1.5" position="-2 1 1"></a-light>
+    <!-- 背光：從後方補光避免背面全黑 -->
+    <a-light type="directional" color="#ffffff" intensity="1.0" position="0 1 -2"></a-light>
 
     <!-- 圖像追蹤目標 (targetIndex: 0 = 第一張圖) -->
     <a-entity mindar-image-target="targetIndex: 0">
