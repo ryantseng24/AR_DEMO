@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Dr. T-Bear WebAR Demo</title>
+
+  <!-- A-Frame -->
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <!-- MindAR Image Tracking -->
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    /* 掃描提示框 */
+    #scanning-overlay {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 15px 30px;
+      border-radius: 25px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 16px;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    #scanning-overlay.hidden {
+      opacity: 0;
+      transform: translateX(-50%) translateY(20px);
+      pointer-events: none;
+    }
+
+    /* 掃描動畫圖示 */
+    .scan-icon {
+      width: 24px;
+      height: 24px;
+      border: 3px solid #4CAF50;
+      border-radius: 5px;
+      position: relative;
+      animation: scan-pulse 1.5s ease-in-out infinite;
+    }
+
+    .scan-icon::before,
+    .scan-icon::after {
+      content: '';
+      position: absolute;
+      background: #4CAF50;
+    }
+
+    .scan-icon::before {
+      width: 8px;
+      height: 3px;
+      top: -6px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .scan-icon::after {
+      width: 3px;
+      height: 8px;
+      left: -6px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    @keyframes scan-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* 載入畫面 */
+    #loading-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+      transition: opacity 0.5s ease;
+    }
+
+    #loading-screen.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .loader {
+      width: 60px;
+      height: 60px;
+      border: 4px solid rgba(255, 255, 255, 0.1);
+      border-top-color: #4CAF50;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    #loading-screen p {
+      color: white;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin-top: 20px;
+      font-size: 18px;
+    }
+
+    /* 找到目標時的成功提示 */
+    #found-overlay {
+      position: fixed;
+      top: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(76, 175, 80, 0.9);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 14px;
+      z-index: 1000;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+    }
+
+    #found-overlay.visible {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <!-- 載入畫面 -->
+  <div id="loading-screen">
+    <div class="loader"></div>
+    <p>正在啟動相機...</p>
+  </div>
+
+  <!-- 掃描提示 -->
+  <div id="scanning-overlay">
+    <div class="scan-icon"></div>
+    <span>請對準海報</span>
+  </div>
+
+  <!-- 找到目標提示 -->
+  <div id="found-overlay">Dr. T-Bear 出現了!</div>
+
+  <!-- A-Frame AR 場景 -->
+  <a-scene
+    mindar-image="
+      imageTargetSrc: ./targets.mind;
+      maxTrack: 1;
+      filterMinCF: 0.0001;
+      filterBeta: 0.001;
+      warmupTolerance: 5;
+      missTolerance: 5;
+    "
+    color-space="sRGB"
+    renderer="colorManagement: true; physicallyCorrectLights: true;"
+    vr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: false"
+  >
+    <!-- 預載資源 -->
+    <a-assets>
+      <!--
+        bearModel: 你的 3D 熊模型
+        請確保 .glb 檔案路徑正確
+      -->
+      <a-asset-item id="bearModel" src="./bear+scientist+3d+model.glb"></a-asset-item>
+    </a-assets>
+
+    <!-- AR 相機 -->
+    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+    <!-- 圖像追蹤目標 (targetIndex: 0 = 第一張圖) -->
+    <a-entity mindar-image-target="targetIndex: 0">
+      <!-- 3D 熊模型 -->
+      <a-gltf-model
+        id="bear-model"
+        src="#bearModel"
+        position="0 0 0.1"
+        scale="0.15 0.15 0.15"
+        rotation="0 0 0"
+
+        animation__rotate="
+          property: rotation;
+          to: 0 360 0;
+          dur: 10000;
+          easing: linear;
+          loop: true;
+        "
+
+        animation__float="
+          property: position;
+          from: 0 0 0.1;
+          to: 0 0.05 0.1;
+          dur: 2000;
+          easing: easeInOutSine;
+          loop: true;
+          dir: alternate;
+        "
+
+        animation__scale-in="
+          property: scale;
+          from: 0 0 0;
+          to: 0.15 0.15 0.15;
+          dur: 800;
+          easing: easeOutElastic;
+          startEvents: model-visible;
+        "
+      ></a-gltf-model>
+
+      <!-- 可選：在模型下方加一個發光底座 -->
+      <a-ring
+        position="0 0 0"
+        rotation="-90 0 0"
+        radius-inner="0.08"
+        radius-outer="0.12"
+        color="#4CAF50"
+        opacity="0.6"
+        animation="
+          property: scale;
+          from: 0.8 0.8 0.8;
+          to: 1.2 1.2 1.2;
+          dur: 1500;
+          easing: easeInOutSine;
+          loop: true;
+          dir: alternate;
+        "
+      ></a-ring>
+    </a-entity>
+  </a-scene>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const scene = document.querySelector('a-scene');
+      const loadingScreen = document.getElementById('loading-screen');
+      const scanningOverlay = document.getElementById('scanning-overlay');
+      const foundOverlay = document.getElementById('found-overlay');
+      const bearModel = document.getElementById('bear-model');
+
+      // 場景載入完成
+      scene.addEventListener('loaded', () => {
+        console.log('A-Frame 場景已載入');
+      });
+
+      // MindAR 初始化完成 (相機已啟動)
+      scene.addEventListener('arReady', () => {
+        console.log('MindAR 已準備就緒');
+        loadingScreen.classList.add('hidden');
+      });
+
+      // MindAR 發生錯誤
+      scene.addEventListener('arError', (event) => {
+        console.error('MindAR 錯誤:', event);
+        loadingScreen.querySelector('p').textContent = '相機啟動失敗，請確認已授權相機權限';
+      });
+
+      // 監聽圖像目標
+      const target = document.querySelector('[mindar-image-target]');
+
+      if (target) {
+        // 目標被偵測到
+        target.addEventListener('targetFound', () => {
+          console.log('目標圖像已找到!');
+          scanningOverlay.classList.add('hidden');
+          foundOverlay.classList.add('visible');
+
+          // 觸發模型出現動畫
+          bearModel.emit('model-visible');
+
+          // 3 秒後隱藏成功提示
+          setTimeout(() => {
+            foundOverlay.classList.remove('visible');
+          }, 3000);
+        });
+
+        // 目標遺失
+        target.addEventListener('targetLost', () => {
+          console.log('目標圖像已遺失');
+          scanningOverlay.classList.remove('hidden');
+        });
+      }
+    });
+  </script>
+</body>
+</html>
